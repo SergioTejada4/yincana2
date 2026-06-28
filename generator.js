@@ -90,11 +90,9 @@ function buildSeed(questions) {
 }
 
 function buildPlayerLink(seed) {
-  const base = window.location.href
-    .split('?')[0]
-    .split('#')[0]
-    .replace(/index\.html$/, 'player.html');
-  return `${base}/${encodeURIComponent(seed)}`;
+  const baseUrl = new URL('player.html', window.location.href);
+  baseUrl.searchParams.set('seed', seed);
+  return baseUrl.toString();
 }
 
 function renderQr(link) {

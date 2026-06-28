@@ -53,8 +53,9 @@ function getSeedFromUrl() {
 
 function buildShareUrl(seedValue) {
   const currentUrl = new URL(window.location.href);
-  const basePath = currentUrl.pathname.replace(/\/player\.html.*$/, '/player.html');
-  return `${currentUrl.origin}${basePath}/${encodeURIComponent(seedValue)}`;
+  const baseUrl = new URL('player.html', currentUrl.href);
+  baseUrl.searchParams.set('seed', seedValue);
+  return baseUrl.toString();
 }
 
 function loadSeed(seedValue) {
