@@ -6,13 +6,45 @@
     <title>Jugador de preguntas</title>
     <style>
       :root {
-        color-scheme: light dark;
+        color-scheme: light;
         font-family: Arial, sans-serif;
+        --bg: #f4f7fb;
+        --text: #14213d;
+        --card: #ffffff;
+        --muted: #5c6b82;
+        --input-bg: #ffffff;
+        --input-border: #c8d4e4;
+        --button-bg: #1f6feb;
+        --button-secondary: #6c757d;
+        --reward-bg: #f2fbf4;
+        --reward-border: #b8e8c6;
+        --timer-bg: #fff7df;
+        --timer-text: #8a5a00;
+        --timer-border: #ffd66b;
+        --shadow: rgba(20, 33, 61, 0.08);
+      }
+      body[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #0f172a;
+        --text: #f8fafc;
+        --card: #111827;
+        --muted: #94a3b8;
+        --input-bg: #1f2937;
+        --input-border: #475569;
+        --button-bg: #3b82f6;
+        --button-secondary: #64748b;
+        --reward-bg: #052e16;
+        --reward-border: #16a34a;
+        --timer-bg: #451a03;
+        --timer-text: #fbbf24;
+        --timer-border: #fb923c;
+        --shadow: rgba(0, 0, 0, 0.35);
       }
       body {
         margin: 0;
-        background: #f4f7fb;
-        color: #14213d;
+        background: var(--bg);
+        color: var(--text);
+        transition: background 0.2s ease, color 0.2s ease;
       }
       .app {
         max-width: 760px;
@@ -20,10 +52,10 @@
         padding: 18px;
       }
       .card {
-        background: white;
+        background: var(--card);
         border-radius: 16px;
         padding: 18px;
-        box-shadow: 0 8px 30px rgba(20, 33, 61, 0.08);
+        box-shadow: 0 8px 30px var(--shadow);
         margin-bottom: 16px;
       }
       h1, h2 {
@@ -33,9 +65,11 @@
         width: 100%;
         box-sizing: border-box;
         padding: 10px;
-        border: 1px solid #c8d4e4;
+        border: 1px solid var(--input-border);
         border-radius: 10px;
         font: inherit;
+        background: var(--input-bg);
+        color: var(--text);
       }
       textarea {
         min-height: 100px;
@@ -50,13 +84,13 @@
         border: 0;
         border-radius: 999px;
         padding: 10px 14px;
-        background: #1f6feb;
+        background: var(--button-bg);
         color: white;
         font-weight: 700;
         cursor: pointer;
       }
       button.secondary {
-        background: #6c757d;
+        background: var(--button-secondary);
       }
       .question-title {
         font-size: 1.1rem;
@@ -65,43 +99,91 @@
       }
       .reward {
         white-space: pre-wrap;
-        background: #f2fbf4;
-        border: 1px solid #b8e8c6;
+        background: var(--reward-bg);
+        border: 1px solid var(--reward-border);
         padding: 12px;
         border-radius: 12px;
         margin-top: 12px;
       }
       .muted {
-        color: #5c6b82;
+        color: var(--muted);
         font-size: 0.95rem;
+      }
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .header-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .toggle-button {
+        min-width: 112px;
+        white-space: nowrap;
+      }
+      .timer {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: var(--timer-bg);
+        color: var(--timer-text);
+        border: 1px solid var(--timer-border);
+        font-weight: 700;
+      }
+      .timer-section {
+        margin-top: 12px;
       }
       @media (max-width: 600px) {
         .app { padding: 10px; }
         .card { padding: 14px; }
+        .card-header { flex-direction: column; }
+        .header-actions { width: 100%; }
+        .toggle-button { align-self: flex-start; }
       }
     </style>
   </head>
   <body>
     <main class="app">
-      <section class="card">
-        <h1>Jugador de preguntas</h1>
-        <p id="seed-status" class="muted">No se ha recibido una SEED en la URL. Puedes abrir este juego desde un enlace compartido o cargar una manualmente.</p>
-        <button id="show-manual-loader" type="button" class="secondary">Cargar una SEED manualmente</button>
-        <div id="manual-loader" hidden>
-          <label for="seed-input">SEED manual</label>
-          <textarea id="seed-input" placeholder="Pega aquí la SEED"></textarea>
-          <div class="actions">
-            <button id="load-seed" type="button">Cargar SEED</button>
+      <section id="seed-card" class="card">
+        <div class="card-header">
+          <div>
+            <h1>Preguntas y acertijos</h1>
+            <h3>¿Lograrás responder correctamente?</h3>
+          </div>
+          <div class="header-actions">
+            <button id="theme-toggle" type="button" class="secondary toggle-button" aria-pressed="false">🌙 Oscuro</button>
+            <button id="toggle-seed-panel" type="button" class="secondary toggle-button" aria-expanded="false">Mostrar</button>
           </div>
         </div>
-        <div class="actions">
-          <a href="index.html"><button type="button" class="secondary">Volver al generador</button></a>
+        <div id="seed-card-content">
+          <p id="seed-status" class="muted">No se ha recibido un código de preguntas en la URL. Puedes abrir este juego desde un enlace compartido o cargar uno manualmente.</p>
+          <button id="show-manual-loader" type="button" class="secondary">Cargar un código de preguntas manualmente</button>
+          <div id="manual-loader" hidden>
+            <label for="seed-input">Introducir manualmente el código de preguntas</label>
+            <textarea id="seed-input" placeholder="Pega aquí el código"></textarea>
+            <div class="actions">
+              <button id="load-seed" type="button">Cargar código</button>
+            </div>
+          </div>
+          <div class="actions">
+            <a href="index.html"><button type="button" class="secondary">Volver al generador</button></a>
+          </div>
         </div>
       </section>
 
       <section id="game-panel" class="card" hidden>
         <div id="progress" class="muted"></div>
         <div id="question-box"></div>
+      </section>
+
+      <section id="timer-section" class="card timer-section" hidden>
+        <div class="muted"></div>
+        <div id="timer-display" class="timer">Tiempo: 00:00.00</div>
       </section>
     </main>
 

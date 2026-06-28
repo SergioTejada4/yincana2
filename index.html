@@ -6,13 +6,41 @@
     <title>Generador de preguntas</title>
     <style>
       :root {
-        color-scheme: light dark;
+        color-scheme: light;
         font-family: Arial, sans-serif;
+        --bg: #f4f7fb;
+        --text: #14213d;
+        --card: #ffffff;
+        --muted: #5c6b82;
+        --question-block: #fcfdff;
+        --question-border: #d9e2f2;
+        --input-bg: #ffffff;
+        --input-border: #c8d4e4;
+        --button-bg: #1f6feb;
+        --button-secondary: #6c757d;
+        --danger: #d9534f;
+        --shadow: rgba(20, 33, 61, 0.08);
+      }
+      body[data-theme="dark"] {
+        color-scheme: dark;
+        --bg: #0f172a;
+        --text: #f8fafc;
+        --card: #111827;
+        --muted: #94a3b8;
+        --question-block: #1f2937;
+        --question-border: #475569;
+        --input-bg: #1f2937;
+        --input-border: #475569;
+        --button-bg: #3b82f6;
+        --button-secondary: #64748b;
+        --danger: #f87171;
+        --shadow: rgba(0, 0, 0, 0.35);
       }
       body {
         margin: 0;
-        background: #f4f7fb;
-        color: #14213d;
+        background: var(--bg);
+        color: var(--text);
+        transition: background 0.2s ease, color 0.2s ease;
       }
       .app {
         max-width: 860px;
@@ -20,21 +48,21 @@
         padding: 18px;
       }
       .card {
-        background: white;
+        background: var(--card);
         border-radius: 16px;
         padding: 18px;
-        box-shadow: 0 8px 30px rgba(20, 33, 61, 0.08);
+        box-shadow: 0 8px 30px var(--shadow);
         margin-bottom: 16px;
       }
       h1, h2 {
         margin-top: 0;
       }
       .question-block {
-        border: 1px solid #d9e2f2;
+        border: 1px solid var(--question-border);
         border-radius: 12px;
         padding: 12px;
         margin-bottom: 12px;
-        background: #fcfdff;
+        background: var(--question-block);
       }
       label {
         display: block;
@@ -45,9 +73,11 @@
         width: 100%;
         box-sizing: border-box;
         padding: 10px;
-        border: 1px solid #c8d4e4;
+        border: 1px solid var(--input-border);
         border-radius: 10px;
         font: inherit;
+        background: var(--input-bg);
+        color: var(--text);
       }
       textarea {
         min-height: 70px;
@@ -59,23 +89,35 @@
         gap: 10px;
         margin-top: 12px;
       }
+      .generation-hero {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 8px 0 18px;
+      }
+      .generate-main-button {
+        min-width: 240px;
+        padding: 16px 24px;
+        font-size: 1.2rem;
+        box-shadow: 0 10px 24px rgba(31, 111, 235, 0.24);
+      }
       button {
         border: 0;
         border-radius: 999px;
         padding: 10px 14px;
-        background: #1f6feb;
+        background: var(--button-bg);
         color: white;
         font-weight: 700;
         cursor: pointer;
       }
       button.secondary {
-        background: #6c757d;
+        background: var(--button-secondary);
       }
       button.danger {
-        background: #d9534f;
+        background: var(--danger);
       }
       .muted {
-        color: #5c6b82;
+        color: var(--muted);
         font-size: 0.95rem;
       }
       .seed-box {
@@ -88,7 +130,42 @@
       .qr-output {
         display: flex;
         justify-content: center;
-        padding: 12px 0 0;
+        padding: 8px 0 0;
+      }
+      .share-preview {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        margin: 6px 0 18px;
+      }
+      .share-link {
+        color: var(--button-bg);
+        font-weight: 700;
+        text-align: center;
+        word-break: break-all;
+        text-decoration: none;
+      }
+      .share-link:hover {
+        text-decoration: underline;
+      }
+      .header-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .questions-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .questions-footer {
+        display: flex;
+        justify-content: center;
+        margin-top: 12px;
       }
       .qr-output img {
         width: 220px;
@@ -107,35 +184,49 @@
     <main class="app">
       <section class="card">
         <h1>Generador de preguntas</h1>
-        <p class="muted">Crea preguntas con respuesta correcta, premio y genera una SEED compacta y reproducible.</p>
+        <p class="muted">Crea preguntas con respuesta correcta, premio y genera QR de manera gratuita y OpenSource.</p>
         <div class="actions">
-          <a href="player.html"><button type="button">Ir al jugador</button></a>
-          <button id="add-question" type="button">Añadir pregunta</button>
-          <button id="generate-seed" type="button">Generar SEED</button>
+          <a href="player.html"><button type="button">Ir al modo jugador (puede que no tenga código cargado aún)</button></a>
+        </div>
+        <div class="header-actions">
+          <button id="theme-toggle" type="button" class="secondary">🌙 Oscuro</button>
         </div>
       </section>
 
       <section class="card">
+        <div class="questions-header">
+          <h2>Preguntas</h2>
+        </div>
         <div id="questions-list"></div>
+        <div class="questions-footer">
+          <button id="add-question" type="button">Añadir pregunta</button>
+        </div>
       </section>
 
       <section class="card">
-        <h2>SEED generada</h2>
-        <label for="seed-output">SEED</label>
-        <textarea id="seed-output" class="seed-box" placeholder="Aquí aparecerá la SEED"></textarea>
-        <label for="share-output">Enlace compartible</label>
-        <textarea id="share-output" class="seed-box" placeholder="Aquí aparecerá el enlace listo para compartir"></textarea>
-        <div id="qr-output" class="qr-output"></div>
-        <div class="actions">
-          <button id="copy-seed" type="button">Copiar SEED</button>
-          <button id="copy-link" type="button">Copiar enlace</button>
-          <button id="generate-qr" type="button">Generar QR</button>
-          <button id="download-seed" type="button">Descargar SEED</button>
-          <button id="load-seed" type="button" class="secondary">Cargar SEED</button>
-          <input id="seed-file" type="file" accept=".txt,.seed,.json" hidden />
-          <button id="load-file" type="button" class="secondary">Cargar desde archivo</button>
+        <h2>Menú de generación</h2>
+        <div class="generation-hero">
+          <button id="generate-seed" type="button" class="generate-main-button">GENERAR</button>
         </div>
-        <p class="muted">La SEED se codifica de forma determinista con LZ-String, así que no depende de un valor aleatorio.</p>
+        <div class="share-preview">
+          <div id="qr-output" class="qr-output"></div>
+          <a id="share-preview-link" class="share-link" href="#" target="_blank" rel="noopener noreferrer">Tu enlace aparecerá aquí</a>
+        </div>
+        <label for="seed-output">Código</label>
+        <textarea id="seed-output" class="seed-box" placeholder="Aquí aparecerá el código de preguntas, puede usarse para guardar preguntas en archivos de texto"></textarea>
+        <label for="share-output">Enlace URL</label>
+        <textarea id="share-output" class="seed-box" placeholder="Aquí aparecerá el enlace URL listo para compartir"></textarea>
+        <div class="actions">
+          <button id="copy-seed" type="button">Copiar código de preguntas</button>
+          <button id="copy-link" type="button">Copiar enlace URL</button>
+          <button id="generate-qr" type="button">Generar QR</button>
+          <button id="download-seed" type="button">Descargar código en texto plano</button>
+          <button id="load-seed" type="button" class="secondary">Cargar código de preguntas</button>
+          <input id="seed-file" type="file" accept=".txt,.seed,.json" hidden />
+          <button id="load-file" type="button" class="secondary">Cargar desde código en archivo</button>
+        </div>
+        <p class="muted">Genera un código y una URL, conviértela en un código QR y comparte al instante.</p>
+        <p class="muted">Emma Soria: Ocio y tiempo libre 2026</p>
       </section>
     </main>
 

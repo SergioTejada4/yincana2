@@ -6,10 +6,17 @@ const loadSeedButton = document.getElementById('load-seed');
 const gamePanel = document.getElementById('game-panel');
 const progress = document.getElementById('progress');
 const questionBox = document.getElementById('question-box');
+const seedCardContent = document.getElementById('seed-card-content');
+const toggleSeedPanelButton = document.getElementById('toggle-seed-panel');
+const themeToggleButton = document.getElementById('theme-toggle');
+const timerDisplay = document.getElementById('timer-display');
+const timerSection = document.getElementById('timer-section');
 
 let questions = [];
 let currentIndex = 0;
 let completed = false;
+let timerStartTime = null;
+let timerIntervalId = null;
 
 function normalizeText(text) {
   return String(text || '')
@@ -26,11 +33,11 @@ function decodeSeed(seed) {
   const encoded = normalizedSeed.replace(prefix, '');
   const decoded = LZString.decompressFromEncodedURIComponent(encoded);
   if (!decoded) {
-    throw new Error('SEED no válida');
+    throw new Error('Código de preguntas no válido');
   }
   const payload = JSON.parse(decoded);
   if (!Array.isArray(payload.questions)) {
-    throw new Error('La SEED no contiene preguntas');
+    throw new Error('El código de preguntas no contiene preguntas');
   }
   return payload.questions;
 }
@@ -58,6 +65,64 @@ function buildShareUrl(seedValue) {
   return baseUrl.toString();
 }
 
+function formatElapsed(elapsedMs) {
+  const totalHundredths = Math.floor(elapsedMs / 10);
+  const minutes = Math.floor(totalHundredths / 6000);
+  const seconds = Math.floor((totalHundredths % 6000) / 100);
+  const hundredths = totalHundredths % 100;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
+}
+
+function stopTimer() {
+  if (timerIntervalId) {
+    window.clearInterval(timerIntervalId);
+    timerIntervalId = null;
+  }
+}
+
+function updateTimer() {
+  if (!timerStartTime || !timerDisplay) {
+    return;
+  }
+  timerDisplay.textContent = `Tiempo: ${formatElapsed(Date.now() - timerStartTime)}`;
+}
+
+function startTimer() {
+  stopTimer();
+  timerStartTime = Date.now();
+  if (timerDisplay && timerSection) {
+    timerSection.hidden = false;
+    updateTimer();
+    timerIntervalId = window.setInterval(updateTimer, 10);
+  }
+}
+
+function resetTimer() {
+  stopTimer();
+  timerStartTime = null;
+  if (timerDisplay && timerSection) {
+    timerSection.hidden = true;
+    timerDisplay.textContent = 'Tiempo: 00:00.00';
+  }
+}
+
+function setSeedPanelCollapsed(isCollapsed) {
+  if (seedCardContent && toggleSeedPanelButton) {
+    seedCardContent.hidden = isCollapsed;
+    toggleSeedPanelButton.textContent = isCollapsed ? 'Mostrar' : 'Ocultar';
+    toggleSeedPanelButton.setAttribute('aria-expanded', String(!isCollapsed));
+  }
+}
+
+function applyTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  if (themeToggleButton) {
+    themeToggleButton.textContent = theme === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+    themeToggleButton.setAttribute('aria-pressed', String(theme === 'dark'));
+  }
+  localStorage.setItem('yincanas-theme', theme);
+}
+
 function loadSeed(seedValue) {
   try {
     questions = decodeSeed(seedValue);
@@ -67,8 +132,11 @@ function loadSeed(seedValue) {
     localStorage.setItem('yincanas-seed', seedValue);
     window.history.replaceState({}, '', buildShareUrl(seedValue));
     manualLoader.hidden = true;
+    resetTimer();
+    startTimer();
+    setSeedPanelCollapsed(true);
     if (seedStatus) {
-      seedStatus.textContent = 'SEED cargada correctamente.';
+      seedStatus.textContent = 'Código de preguntas cargado correctamente.';
     }
     renderQuestion();
   } catch (error) {
@@ -112,8 +180,14 @@ function handleAnswer() {
   const currentQuestion = questions[currentIndex];
   const normalizedInput = normalizeText(answerInput.value);
   const normalizedAnswer = normalizeText(currentQuestion.answer || '');
+  const isLastQuestion = currentIndex === questions.length - 1;
+  const isCorrect = normalizedInput === normalizedAnswer;
 
-  if (normalizedInput === normalizedAnswer) {
+  if (isCorrect && isLastQuestion) {
+    stopTimer();
+  }
+
+  if (isCorrect) {
     feedback.innerHTML = `
       <div class="reward">${currentQuestion.reward || '¡Correcto!'}</div>
       <div class="actions">
@@ -139,13 +213,28 @@ loadSeedButton.addEventListener('click', () => {
 });
 
 showManualLoaderButton.addEventListener('click', () => {
+  setSeedPanelCollapsed(false);
   manualLoader.hidden = false;
   if (seedStatus) {
-    seedStatus.textContent = 'Puedes pegar una SEED manualmente si necesitas probar otra partida.';
+    seedStatus.textContent = 'Puedes pegar un código de preguntas manualmente si necesitas probar otra partida.';
   }
 });
 
+toggleSeedPanelButton.addEventListener('click', () => {
+  const isCollapsed = seedCardContent ? seedCardContent.hidden : false;
+  setSeedPanelCollapsed(!isCollapsed);
+});
+
+themeToggleButton.addEventListener('click', () => {
+  const nextTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(nextTheme);
+});
+
 window.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('yincanas-theme');
+  const preferredTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  applyTheme(preferredTheme);
+
   const seedFromUrl = getSeedFromUrl();
   const savedSeed = localStorage.getItem('yincanas-seed');
 
@@ -155,8 +244,10 @@ window.addEventListener('DOMContentLoaded', () => {
     loadSeed(savedSeed);
   } else {
     gamePanel.hidden = true;
+    resetTimer();
+    setSeedPanelCollapsed(false);
     if (seedStatus) {
-      seedStatus.textContent = 'No se ha recibido una SEED en la URL. Puedes abrir este juego desde un enlace compartido o cargar una manualmente.';
+      seedStatus.textContent = 'No se ha recibido un código de preguntas en la URL. Puedes abrir este juego desde un enlace compartido o cargar uno manualmente.';
     }
   }
 });

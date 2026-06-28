@@ -2,6 +2,7 @@ const questionsList = document.getElementById('questions-list');
 const seedOutput = document.getElementById('seed-output');
 const shareOutput = document.getElementById('share-output');
 const qrOutput = document.getElementById('qr-output');
+const sharePreviewLink = document.getElementById('share-preview-link');
 const addQuestionButton = document.getElementById('add-question');
 const generateSeedButton = document.getElementById('generate-seed');
 const copySeedButton = document.getElementById('copy-seed');
@@ -11,6 +12,7 @@ const downloadSeedButton = document.getElementById('download-seed');
 const loadSeedButton = document.getElementById('load-seed');
 const loadFileButton = document.getElementById('load-file');
 const seedFileInput = document.getElementById('seed-file');
+const themeToggleButton = document.getElementById('theme-toggle');
 
 function normalizeText(text) {
   return String(text || '')
@@ -95,12 +97,27 @@ function buildPlayerLink(seed) {
   return baseUrl.toString();
 }
 
+function updateSharePreview(link) {
+  if (sharePreviewLink) {
+    if (link) {
+      sharePreviewLink.href = link;
+      sharePreviewLink.textContent = link;
+      sharePreviewLink.hidden = false;
+    } else {
+      sharePreviewLink.href = '#';
+      sharePreviewLink.textContent = 'Tu enlace aparecerá aquí';
+      sharePreviewLink.hidden = false;
+    }
+  }
+}
+
 function renderQr(link) {
   if (!window.QRCode) {
     alert('No se pudo cargar el generador de QR.');
     return;
   }
 
+  updateSharePreview(link);
   qrOutput.innerHTML = '<p class="muted">Generando QR...</p>';
   window.QRCode.toDataURL(link, {
     width: 220,
@@ -175,13 +192,22 @@ function downloadSeed() {
   URL.revokeObjectURL(url);
 }
 
+function applyTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  if (themeToggleButton) {
+    themeToggleButton.textContent = theme === 'dark' ? '☀️ Claro' : '🌙 Oscuro';
+    themeToggleButton.setAttribute('aria-pressed', String(theme === 'dark'));
+  }
+  localStorage.setItem('yincanas-theme', theme);
+}
+
 addQuestionButton.addEventListener('click', addQuestion);
 generateSeedButton.addEventListener('click', () => {
   const questions = collectQuestions();
   const seed = buildSeed(questions);
   seedOutput.value = seed;
   shareOutput.value = buildPlayerLink(seed);
-  qrOutput.innerHTML = '';
+  renderQr(shareOutput.value || seedOutput.value);
 });
 copySeedButton.addEventListener('click', copySeed);
 copyLinkButton.addEventListener('click', copyLink);
@@ -203,6 +229,14 @@ seedFileInput.addEventListener('change', async (event) => {
   applySeed(text);
 });
 
+themeToggleButton.addEventListener('click', () => {
+  const nextTheme = document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(nextTheme);
+});
+
 window.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('yincanas-theme');
+  const preferredTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  applyTheme(preferredTheme);
   addQuestion();
 });
